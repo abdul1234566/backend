@@ -1,22 +1,32 @@
-import { v2 as cloudinary } from 'cloudinary';
-import multer from 'multer';
+import { v2 as cloudinary } from "cloudinary";
+import multer from "multer";
+import streamifier from "streamifier";
 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || "dlzgxtrso",
+  api_key: process.env.CLOUDINARY_API_KEY || "428214689914334",
+  api_secret: process.env.CLOUDINARY_API_SECRET || "f2OpyTozpr7GIyAV4lbUEeIBxTU",
+});
 
-    // Configuration
-    cloudinary.config({
-      cloud_name: "dlzgxtrso",
-      api_key: "428214689914334",
-      api_secret: "f2OpyTozpr7GIyAV4lbUEeIBxTU", // Click 'View API Keys' above to copy your API secret
-    });
-    
-   console.log(cloudinary.config());
+// Use memory storage
+export const upload = multer({ storage: multer.memoryStorage() });
 
-   const storage = new CloudinaryStorage({
-    cloudinary,
-    params: {
-        folder: 'my_images',
-        allowed_formats: ['jpg', 'png', 'jpeg', 'gif', 'webp', 'jfif'],
-    }
-   });
+// Function to upload to cloudinary
+export const uploadToCloudinary = (fileBuffer, folder = "my_images") => {
+  return new Promise((resolve, reject) => {
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
+        folder,
+        resource_type: "auto",
+      },
+      (error, result) => {
+        if (result) resolve(result);
+        else reject(error);
+      }
+    );
 
-   export const upload = multer({ storage });
+    streamifier.createReadStream(fileBuffer).pipe(uploadStream);
+  });
+};
+
+export { cloudinary };
